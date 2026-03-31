@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Photobooth</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="app">
+
+  <!-- LEFT SIDE -->
+  <div class="left">
+
+    <h2>📸 Photobooth</h2>
+
+    <!-- CAMERA -->
+    <div class="camera-box">
+      <video id="video" autoplay></video>
+      <div id="countdown">3</div>
+    </div>
+
+    <div class="controls">
+      <button onclick="startCamera()">Start Camera</button>
+      <button onclick="startCapture()">Start Session</button>
+      <input type="file" accept="image/*" onchange="uploadImage(event)">
+    </div>
+
+    <!-- FRAME -->
+    <div class="section">
+      <p>Frame</p>
+      <button onclick="setFrame('strip')">Strip</button>
+      <button onclick="setFrame('grid')">Grid</button>
+      <button onclick="setFrame('vintage')">Vintage</button>
+    </div>
+
+    <!-- FILTER -->
+    <div class="section">
+      <p>Filter</p>
+      <button onclick="setFilter('none')">Normal</button>
+      <button onclick="setFilter('grayscale(100%)')">B/W</button>
+      <button onclick="setFilter('sepia(80%)')">Sepia</button>
+      <button onclick="setFilter('contrast(120%) sepia(50%)')">Vintage</button>
+    </div>
+
+  </div>
+
+  <!-- RIGHT SIDE -->
+  <div class="right">
+    <h3>Preview</h3>
+    <canvas id="canvas"></canvas>
+    <button onclick="download()">Download</button>
+  </div>
+
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
