@@ -2,54 +2,189 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Photobooth</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
 <div class="app">
-
-  <!-- LEFT SIDE -->
-  <div class="left">
-
-    <h2>📸 Photobooth</h2>
-
-    <!-- CAMERA -->
-    <div class="camera-box">
-      <video id="video" autoplay></video>
-      <div id="countdown">3</div>
+  
+  <!-- STEP 1: Frame Selection -->
+  <div id="step-1" class="step">
+    <div class="step-container">
+      <h1>Choose Your Frame</h1>
+      <p class="subtitle">Select a frame style for your photo strip</p>
+      
+      <div class="frame-options">
+        <div class="frame-option" onclick="selectFrame('strip')">
+          <div class="frame-preview-box">
+            <div class="frame-visual strip-visual"></div>
+          </div>
+          <h3>Normal Strip</h3>
+          <p>Clean photobooth</p>
+          <span class="frame-size">5.08 × 15.24 cm</span>
+        </div>
+        
+        <div class="frame-option" onclick="selectFrame('grid')">
+          <div class="frame-preview-box">
+            <div class="frame-visual grid-visual"></div>
+          </div>
+          <h3>2×2 Grid</h3>
+          <p>Modern / scrapbook</p>
+          <span class="frame-size">10 × 10 cm</span>
+        </div>
+        
+        <div class="frame-option" onclick="selectFrame('vintage')">
+          <div class="frame-preview-box">
+            <div class="frame-visual vintage-visual"></div>
+          </div>
+          <h3>Vintage</h3>
+          <p>Tight, classic film</p>
+          <span class="frame-size">3.8 × 15.24 cm</span>
+        </div>
+      </div>
     </div>
-
-    <div class="controls">
-      <button onclick="startCamera()">Start Camera</button>
-      <button onclick="startCapture()">Start Session</button>
-      <input type="file" accept="image/*" onchange="uploadImage(event)">
-    </div>
-
-    <!-- FRAME -->
-    <div class="section">
-      <p>Frame</p>
-      <button onclick="setFrame('strip')">Strip</button>
-      <button onclick="setFrame('grid')">Grid</button>
-      <button onclick="setFrame('vintage')">Vintage</button>
-    </div>
-
-    <!-- FILTER -->
-    <div class="section">
-      <p>Filter</p>
-      <button onclick="setFilter('none')">Normal</button>
-      <button onclick="setFilter('grayscale(100%)')">B/W</button>
-      <button onclick="setFilter('sepia(80%)')">Sepia</button>
-      <button onclick="setFilter('contrast(120%) sepia(50%)')">Vintage</button>
-    </div>
-
   </div>
 
-  <!-- RIGHT SIDE -->
-  <div class="right">
-    <h3>Preview</h3>
-    <canvas id="canvas"></canvas>
-    <button onclick="download()">Download</button>
+  <!-- STEP 2: Input Method Selection -->
+  <div id="step-2" class="step" style="display: none;">
+    <div class="step-container">
+      <h1>How would you like to add photos?</h1>
+      <p class="subtitle">Choose your preferred method</p>
+      
+      <div class="input-methods">
+        <div class="input-method" onclick="selectInputMethod('camera')">
+          <div class="method-icon">⬤</div>
+          <h3>Take Photos</h3>
+          <p>Use your camera to capture 4 photos</p>
+        </div>
+        
+        <div class="input-method" onclick="selectInputMethod('files')">
+          <div class="method-icon">▢</div>
+          <h3>Choose from Files</h3>
+          <p>Upload 4 photos from your device</p>
+        </div>
+      </div>
+      
+      <button class="btn-secondary" onclick="previousStep()">Back</button>
+    </div>
+  </div>
+
+  <!-- STEP 3A: File Upload -->
+  <div id="step-3" class="step" style="display: none;">
+    <div class="step-container">
+      <div id="file-upload-view">
+        <h1>Choose Your Photos</h1>
+        <p class="subtitle">Select 4 images (JPEG, PNG, or WEBP)</p>
+        
+        <input type="file" 
+               id="file-input" 
+               accept="image/jpeg,image/jpg,image/png,image/webp" 
+               multiple 
+               onchange="handleFileSelect(event)"
+               style="display: none;">
+        
+        <button class="btn-primary" onclick="document.getElementById('file-input').click()">
+          Choose Files
+        </button>
+        
+        <div id="file-preview-grid" class="preview-grid"></div>
+        
+        <div class="button-group">
+          <button class="btn-secondary" onclick="previousStep()">Back</button>
+          <button class="btn-primary" onclick="nextStep()">Next</button>
+        </div>
+      </div>
+      
+      <!-- STEP 3B: Camera Capture (shown when camera method selected) -->
+      <div id="camera-capture-view" style="display: none;">
+        <h1>Take Your Photos</h1>
+        <p class="subtitle">Get ready for the countdown</p>
+        
+        <div class="camera-box">
+          <video id="video" autoplay playsinline></video>
+          <div id="countdown">3</div>
+        </div>
+        
+        <button id="camera-capture-btn" class="btn-primary" onclick="startCameraCapture()">
+          Start Capture
+        </button>
+        
+        <div id="camera-preview-grid" class="preview-grid" style="display: none;"></div>
+        
+        <div class="button-group">
+          <button class="btn-secondary" onclick="previousStep()">Back</button>
+          <button class="btn-primary" onclick="nextStep()">Next</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 4: Customization -->
+  <div id="step-4" class="step" style="display: none;">
+    <div class="step-container">
+      <h1>Customize Your Photo Strip</h1>
+      <p class="subtitle">Choose border color and filter</p>
+      
+      <div class="customization-layout">
+        <div class="customization-controls">
+          
+          <div class="control-section">
+            <h3>Border Color</h3>
+            <input type="color" 
+                   id="border-color-picker" 
+                   value="#000000" 
+                   onchange="setBorderColor(this.value)">
+            <label for="border-color-picker">Pick a color</label>
+          </div>
+          
+          <div class="control-section">
+            <h3>Filter</h3>
+            <div class="filter-buttons">
+              <button onclick="setFilter('none')" class="filter-btn">Normal</button>
+              <button onclick="setFilter('grayscale(100%)')" class="filter-btn">Black & White</button>
+              <button onclick="setFilter('sepia(80%)')" class="filter-btn">Sepia</button>
+              <button onclick="setFilter('contrast(120%) saturate(130%)')" class="filter-btn">Vivid</button>
+            </div>
+          </div>
+        </div>
+        
+        <div class="preview-area">
+          <h3>Preview</h3>
+          <canvas id="customization-preview"></canvas>
+        </div>
+      </div>
+      
+      <div class="button-group">
+        <button class="btn-secondary" onclick="previousStep()">Back</button>
+        <button class="btn-primary" onclick="nextStep()">Next</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 5: Final Preview & Download -->
+  <div id="step-5" class="step" style="display: none;">
+    <div class="step-container final-step">
+      <h1>Your Photo Strip is Ready</h1>
+      <p class="subtitle">Download your masterpiece</p>
+      
+      <div class="final-preview">
+        <canvas id="final-canvas"></canvas>
+      </div>
+      
+      <div class="button-group">
+        <button class="btn-primary btn-large" onclick="download()">
+          Download Photo Strip
+        </button>
+        <button class="btn-secondary" onclick="resetApp()">
+          Start Over
+        </button>
+      </div>
+    </div>
   </div>
 
 </div>
