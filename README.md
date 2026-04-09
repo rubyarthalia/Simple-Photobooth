@@ -7,7 +7,7 @@ A professional browser-based photobooth application with a guided multi-step wor
 ### Multi-Step Workflow
 1. **Frame Selection**: Choose from three professionally sized layouts
 2. **Input Method**: Take photos with camera or upload from files
-3. **Photo Capture/Upload**: Real-time preview with individual retake options
+3. **Photo Capture/Upload**: Real-time preview with slot clearing and refill options
 4. **Customization**: Border color picker and filter effects
 5. **Final Preview**: Download high-quality print-ready image
 
@@ -16,13 +16,13 @@ A professional browser-based photobooth application with a guided multi-step wor
 - **Normal Strip** (5.08 × 15.24 cm)
   - Clean photobooth aesthetic
   - 4 photos stacked vertically
-  - Timestamp included
+  - Timestamp included (auto contrast text color)
   - Photo ratio: 1.36:1
 
 - **2×2 Grid** (10 × 10 cm)
   - Modern scrapbook style
   - 4 photos in 2×2 layout
-  - Timestamp included
+  - Timestamp included (auto contrast text color)
   - Photo ratio: 0.8:1
 
 - **Vintage** (3.8 × 15.24 cm)
@@ -35,7 +35,10 @@ A professional browser-based photobooth application with a guided multi-step wor
 
 - **Intelligent Cropping**: Photos automatically crop to fit without distortion
 - **Live Preview**: See your layout update in real-time during capture
-- **Individual Retake**: Replace any photo with X button on each slot
+- **Adaptive Timestamp Color**: White text on dark borders, black text on bright borders
+- **Camera Shutter Sound**: Plays on every captured photo
+- **Viewport-Fit Preview**: Final/customization previews are scaled to fit one page without scrolling
+- **Flexible Slot Refill**: Clear any slot with X and refill empty camera slots in batch
 - **File Validation**: Accepts JPEG, PNG, and WEBP formats only
 - **Print Quality**: 300 DPI output for professional printing
 - **Customizable Borders**: Choose any color for frame borders
@@ -44,7 +47,7 @@ A professional browser-based photobooth application with a guided multi-step wor
 ## Tech Stack
 
 - **HTML5**: Semantic markup and structure
-- **CSS3**: Minimalistic black and white design
+- **CSS3**: Minimalistic black and white design with local custom font
 - **Vanilla JavaScript**: No frameworks or dependencies
 - **Browser APIs**: 
   - `getUserMedia` for camera access
@@ -59,8 +62,9 @@ Photobooth/
 ├── style.css           # Minimalistic B&W styling
 ├── script.js           # State management, camera, rendering logic
 ├── assets/
-│   ├── frame/          # Frame reference images (optional)
-│   └── shutter.wav     # Sound assets
+│   ├── majestic_face/
+│   │   └── Majestic Face.otf  # Local font
+│   └── shutter.wav            # Camera shutter sound
 ├── CHANGELOG.md        # Version history
 └── README.md           # This file
 ```
@@ -90,7 +94,7 @@ Then navigate to `http://localhost:8080`
 4. Click "Start Capture"
 5. Pose for each countdown (4 photos total)
 6. Review preview grid
-7. Click X on any photo to retake it
+7. Click X on any photo to clear that slot, then click Start Capture to refill empty slots
 8. Click "Next" when satisfied
 
 ### Uploading Photos
@@ -98,7 +102,7 @@ Then navigate to `http://localhost:8080`
 2. Choose "Choose from Files"
 3. Click "Choose Files" and select 4 images
 4. Review preview grid
-5. Click X on any photo to replace it
+5. Click X on any photo to clear that slot, then click "Choose File" in that slot to replace it
 6. Click "Next" when all 4 slots are filled
 
 ### Customization
@@ -163,4 +167,5 @@ Open source - feel free to modify and use for personal or commercial projects.
 
 ## Credits
 
-Built with vanilla JavaScript and modern browser APIs. No external libraries required.
+- Built with vanilla JavaScript and modern browser APIs. No external libraries required.
+- Font: Majestic Face from dafont: https://www.dafont.com/majestic-face.font?text=hiii&back=theme

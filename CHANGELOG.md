@@ -4,6 +4,26 @@ All notable changes to this project should be documented in this file.
 
 This format is inspired by Keep a Changelog and uses a date-based section style.
 
+## 2026-04-09
+
+### Added
+
+- **Custom local font integration**: Added Majestic Face font from local assets and applied across UI and canvas timestamp text
+- **Shutter sound on capture**: Camera capture now plays `assets/shutter.wav` for each shot
+- **Dynamic timestamp contrast**: Timestamp text auto-switches to white on dark borders and black on bright borders
+
+### Changed
+
+- **Preview scaling behavior**: Customization and final preview canvases now scale to viewport height so full strips fit on one page without scrolling
+- **Typography scaling**: Increased overall text size and adjusted heading/button sizes for stronger readability with the custom font
+- **Text presentation**: UI text and rendered timestamp display in lowercase for visual consistency with selected font style
+
+### Fixed
+
+- **Input method switch persistence**: Switching between Files and Camera now clears stale photos from the previous method
+- **Grid recapture flow**: Clearing camera slots with `X` now supports batch refill of all empty slots (instead of single-slot-only recapture behavior)
+- **File preview slot action**: `X` in file mode now clears the slot directly, making replacement flow more predictable
+
 ## 2026-04-07
 
 ### Added

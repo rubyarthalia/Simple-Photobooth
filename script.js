@@ -37,6 +37,14 @@ const FRAME_CONFIG = {
   }
 };
 
+function playShutterSound() {
+  const shutterSound = new Audio('assets/shutter.wav');
+  shutterSound.volume = 0.9;
+  shutterSound.play().catch(() => {
+    // Ignore autoplay/playback failures to avoid blocking capture flow.
+  });
+}
+
 // NAVIGATION
 function goToStep(stepNumber) {
   // Clean up previous step
@@ -212,6 +220,12 @@ function selectFrame(frameType) {
 
 // STEP 2: Input Method Selection
 function selectInputMethod(method) {
+  const isMethodChanged = appState.inputMethod && appState.inputMethod !== method;
+  if (isMethodChanged && appState.selectedFrame) {
+    const requiredSlots = FRAME_CONFIG[appState.selectedFrame].slots;
+    appState.images = new Array(requiredSlots).fill(null);
+  }
+
   appState.inputMethod = method;
   setTimeout(() => nextStep(), 300);
 }
@@ -306,7 +320,7 @@ function renderFilePreview() {
       const removeBtn = document.createElement('button');
       removeBtn.className = 'remove-btn';
       removeBtn.innerHTML = '×';
-      removeBtn.onclick = () => replaceImage(index);
+      removeBtn.onclick = () => removeImage(index);
       slot.appendChild(removeBtn);
     } else {
       slot.innerHTML = '<button class="choose-btn" onclick="replaceImage(' + index + ')">Choose File</button>';
@@ -351,6 +365,7 @@ function captureToSlot(index) {
     tempCanvas.height = video.videoHeight;
     
     const ctx = tempCanvas.getContext("2d");
+    playShutterSound();
     ctx.translate(tempCanvas.width, 0);
     ctx.scale(-1, 1);
     ctx.drawImage(video, 0, 0);
@@ -382,6 +397,22 @@ async function retakePhoto(index) {
     captureBtn.textContent = 'Start Capture';
     captureBtn.onclick = startCameraCapture;
   };
+}
+
+async function clearCameraSlot(index) {
+  appState.images[index] = null;
+  renderCameraPreview();
+
+  const captureBtn = document.getElementById('camera-capture-btn');
+  if (captureBtn) {
+    captureBtn.style.display = 'block';
+    captureBtn.textContent = 'Start Capture';
+    captureBtn.onclick = startCameraCapture;
+  }
+
+  if (!appState.cameraStream) {
+    await startCamera();
+  }
 }
 
 function renderCameraPreview() {
@@ -420,7 +451,7 @@ function renderCameraPreview() {
       const removeBtn = document.createElement('button');
       removeBtn.className = 'remove-btn';
       removeBtn.innerHTML = '×';
-      removeBtn.onclick = () => retakePhoto(index);
+      removeBtn.onclick = () => clearCameraSlot(index);
       slot.appendChild(removeBtn);
     } else {
       slot.classList.add('empty-slot');
@@ -507,6 +538,45 @@ function drawImageCropped(ctx, img, x, y, width, height, targetAspect) {
   }
   
   ctx.drawImage(img, sx, sy, sWidth, sHeight, x, y, width, height);
+}
+
+// Return readable text color based on background brightness.
+function getContrastTextColor(backgroundColor) {
+  if (!backgroundColor || typeof backgroundColor !== 'string') return '#000000';
+
+  let r;
+  let g;
+  let b;
+
+  // Handle hex colors: #RGB or #RRGGBB
+  if (backgroundColor.startsWith('#')) {
+    let hex = backgroundColor.slice(1).trim();
+
+    if (hex.length === 3) {
+      hex = hex.split('').map(ch => ch + ch).join('');
+    }
+
+    if (hex.length === 6) {
+      r = parseInt(hex.slice(0, 2), 16);
+      g = parseInt(hex.slice(2, 4), 16);
+      b = parseInt(hex.slice(4, 6), 16);
+    }
+  } else {
+    // Handle rgb()/rgba() fallback formats.
+    const match = backgroundColor.match(/rgba?\((\d+)\s*,\s*(\d+)\s*,\s*(\d+)/i);
+    if (match) {
+      r = Number(match[1]);
+      g = Number(match[2]);
+      b = Number(match[3]);
+    }
+  }
+
+  // Fallback to black text if parsing fails.
+  if (![r, g, b].every(Number.isFinite)) return '#000000';
+
+  // Perceived brightness (YIQ). Higher means brighter background.
+  const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+  return brightness < 150 ? '#ffffff' : '#000000';
 }
 
 // RENDER TO CANVAS (Main rendering function)
@@ -612,10 +682,10 @@ function renderToCanvas(canvas, frameType, images, filter, borderColor, scale = 
       minute: '2-digit',
       hour12: true 
     });
-    const timestamp = `${dateStr} ${timeStr}`;
+    const timestamp = `${dateStr} ${timeStr}`.toLowerCase();
     
-    ctx.fillStyle = borderColor === '#000000' || borderColor === '#000' ? '#ffffff' : '#000000';
-    ctx.font = `bold ${20 * scale}px 'Inter', 'Courier New', monospace`;
+    ctx.fillStyle = getContrastTextColor(borderColor);
+    ctx.font = `bold ${20 * scale}px 'Majestic Face', 'Times New Roman', serif`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(timestamp, canvas.width / 2, timestampY + (timestampHeight / 2));
