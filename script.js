@@ -95,9 +95,10 @@ function updateFlipButtonLabel() {
   const flipBtn = document.getElementById('camera-flip-btn');
   if (!flipBtn) return;
 
-  flipBtn.textContent = appState.cameraFacingMode === 'user'
-    ? 'Use Back Camera'
-    : 'Use Front Camera';
+  const nextMode = appState.cameraFacingMode === 'user' ? 'environment' : 'user';
+  flipBtn.textContent = '⇄';
+  flipBtn.setAttribute('aria-label', nextMode === 'environment' ? 'Switch to back camera' : 'Switch to front camera');
+  flipBtn.title = nextMode === 'environment' ? 'Switch to back camera' : 'Switch to front camera';
 }
 
 // NAVIGATION
@@ -286,8 +287,8 @@ function selectFrame(frameType) {
 
 // STEP 2: Input Method Selection
 function selectInputMethod(method) {
-  const isMethodChanged = appState.inputMethod && appState.inputMethod !== method;
-  if (isMethodChanged && appState.selectedFrame) {
+  const shouldResetImages = appState.selectedFrame && (method === 'camera' || appState.inputMethod !== method);
+  if (shouldResetImages) {
     const requiredSlots = FRAME_CONFIG[appState.selectedFrame].slots;
     appState.images = new Array(requiredSlots).fill(null);
   }
@@ -507,12 +508,13 @@ async function clearCameraSlot(index) {
 async function flipCamera() {
   if (appState.isCapturing) return;
 
-  appState.cameraFacingMode = appState.cameraFacingMode === 'user' ? 'environment' : 'user';
+  const previousFacingMode = appState.cameraFacingMode;
+  appState.cameraFacingMode = previousFacingMode === 'user' ? 'environment' : 'user';
 
   try {
     await startCamera();
   } catch {
-    appState.cameraFacingMode = appState.cameraFacingMode === 'user' ? 'environment' : 'user';
+    appState.cameraFacingMode = previousFacingMode;
     updateVideoMirror();
     updateFlipButtonLabel();
     alert('Unable to switch camera on this device/browser.');

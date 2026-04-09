@@ -11,7 +11,7 @@ This format is inspired by Keep a Changelog and uses a date-based section style.
 - **Custom local font integration**: Added Majestic Face font from local assets and applied across UI and canvas timestamp text
 - **Shutter sound on capture**: Camera capture now plays `assets/shutter.wav` for each shot
 - **Dynamic timestamp contrast**: Timestamp text auto-switches to white on dark borders and black on bright borders
-- **Mobile camera flip control**: Added front/back camera toggle in capture view, with live stream restart and correct mirroring behavior per camera direction
+- **Mobile camera flip control**: Added a right-side overlay flip button in the camera preview, with live stream restart and correct mirroring behavior per camera direction
 
 ### Changed
 
@@ -22,6 +22,7 @@ This format is inspired by Keep a Changelog and uses a date-based section style.
 ### Fixed
 
 - **Input method switch persistence**: Switching between Files and Camera now clears stale photos from the previous method
+- **Camera re-entry reset**: Choosing Take Photos again after going Back now clears the previous camera batch so the next session starts empty
 - **Grid recapture flow**: Clearing camera slots with `X` now supports batch refill of all empty slots (instead of single-slot-only recapture behavior)
 - **File preview slot action**: `X` in file mode now clears the slot directly, making replacement flow more predictable
 - **Shutter replay consistency**: Reused a preloaded shutter audio instance so capture sound plays reliably on every photo, not just the first
