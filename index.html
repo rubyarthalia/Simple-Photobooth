@@ -106,10 +106,15 @@
           <video id="video" autoplay playsinline></video>
           <div id="countdown">3</div>
         </div>
-        
-        <button id="camera-capture-btn" class="btn-primary" onclick="startCameraCapture()">
-          Start Capture
-        </button>
+
+        <div class="camera-action-row">
+          <button id="camera-capture-btn" class="btn-primary" onclick="startCameraCapture()">
+            Start Capture
+          </button>
+          <button id="camera-flip-btn" class="btn-secondary" onclick="flipCamera()" type="button">
+            Use Back Camera
+          </button>
+        </div>
         
         <div id="camera-preview-grid" class="preview-grid" style="display: none;"></div>
         

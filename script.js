@@ -6,7 +6,11 @@ const appState = {
   images: [],
   borderColor: '#000000',
   filter: 'none',
-  cameraStream: null
+  cameraStream: null,
+  shutterSound: null,
+  shutterUnlocked: false,
+  cameraFacingMode: 'user',
+  isCapturing: false
 };
 
 const FRAME_CONFIG = {
@@ -37,17 +41,63 @@ const FRAME_CONFIG = {
   }
 };
 
-function playShutterSound() {
+function getShutterSound() {
   if (!appState.shutterSound) {
     appState.shutterSound = new Audio('assets/shutter.wav');
     appState.shutterSound.preload = 'auto';
     appState.shutterSound.volume = 0.9;
+    appState.shutterSound.load();
   }
 
-  appState.shutterSound.currentTime = 0;
-  appState.shutterSound.play().catch(() => {
-    // Ignore autoplay/playback failures to avoid blocking capture flow.
+  return appState.shutterSound;
+}
+
+async function unlockShutterSound() {
+  const shutterSound = getShutterSound();
+  if (appState.shutterUnlocked) return;
+
+  try {
+    shutterSound.muted = true;
+    await shutterSound.play();
+    shutterSound.pause();
+    shutterSound.currentTime = 0;
+    appState.shutterUnlocked = true;
+  } catch {
+    // Keep capture flow running even if browser refuses audio unlock.
+  } finally {
+    shutterSound.muted = false;
+  }
+}
+
+function playShutterSound() {
+  const shutterSound = getShutterSound();
+
+  shutterSound.currentTime = 0;
+  shutterSound.play().catch(() => {
+    // Some mobile browsers are inconsistent when replaying the same element.
+    const fallbackSound = new Audio('assets/shutter.wav');
+    fallbackSound.volume = 0.9;
+    fallbackSound.play().catch(() => {
+      // Ignore autoplay/playback failures to avoid blocking capture flow.
+    });
   });
+}
+
+function updateVideoMirror() {
+  const video = document.getElementById('video');
+  if (!video) return;
+
+  // Mirror only selfie/front camera for natural preview behavior.
+  video.style.transform = appState.cameraFacingMode === 'user' ? 'scaleX(-1)' : 'none';
+}
+
+function updateFlipButtonLabel() {
+  const flipBtn = document.getElementById('camera-flip-btn');
+  if (!flipBtn) return;
+
+  flipBtn.textContent = appState.cameraFacingMode === 'user'
+    ? 'Use Back Camera'
+    : 'Use Front Camera';
 }
 
 // NAVIGATION
@@ -177,6 +227,8 @@ function resetApp() {
   appState.images = [];
   appState.borderColor = '#000000';
   appState.filter = 'none';
+  appState.cameraFacingMode = 'user';
+  appState.isCapturing = false;
   
   // Clear file input
   const fileInput = document.getElementById('file-input');
@@ -187,13 +239,22 @@ function resetApp() {
 
 // CAMERA
 function startCamera() {
-  return navigator.mediaDevices.getUserMedia({ video: true })
+  stopCamera();
+
+  const requestedVideo = {
+    facingMode: { ideal: appState.cameraFacingMode }
+  };
+
+  return navigator.mediaDevices.getUserMedia({ video: requestedVideo, audio: false })
+    .catch(() => navigator.mediaDevices.getUserMedia({ video: true, audio: false }))
     .then(stream => {
       appState.cameraStream = stream;
       const video = document.getElementById("video");
       if (video) {
         video.srcObject = stream;
       }
+      updateVideoMirror();
+      updateFlipButtonLabel();
       return stream;
     });
 }
@@ -338,28 +399,47 @@ function renderFilePreview() {
 // STEP 3B: Camera Capture
 async function initCameraPreview() {
   await startCamera();
+  updateFlipButtonLabel();
   renderCameraPreview(); // Show empty slots initially
 }
 
 async function startCameraCapture() {
+  if (appState.isCapturing) return;
+
   const requiredSlots = FRAME_CONFIG[appState.selectedFrame].slots;
   const emptySlots = appState.images.map((img, idx) => img === null ? idx : -1).filter(idx => idx !== -1);
   
   if (emptySlots.length === 0) return;
+
+  // Unlock audio while still inside the user click gesture.
+  await unlockShutterSound();
+
+  appState.isCapturing = true;
+
+  const captureBtn = document.getElementById('camera-capture-btn');
+  const flipBtn = document.getElementById('camera-flip-btn');
+  if (captureBtn) captureBtn.disabled = true;
+  if (flipBtn) flipBtn.disabled = true;
   
-  // Show preview grid
-  document.getElementById('camera-preview-grid').style.display = 'grid';
-  
-  for (let i = 0; i < emptySlots.length; i++) {
-    const slotIndex = emptySlots[i];
-    await countdown(3);
-    await captureToSlot(slotIndex); // Wait for capture to complete
-    await new Promise(resolve => setTimeout(resolve, 100)); // Small delay for image to process
-    renderCameraPreview(); // Update preview after each capture
+  try {
+    // Show preview grid
+    document.getElementById('camera-preview-grid').style.display = 'grid';
+
+    for (let i = 0; i < emptySlots.length; i++) {
+      const slotIndex = emptySlots[i];
+      await countdown(3);
+      await captureToSlot(slotIndex); // Wait for capture to complete
+      await new Promise(resolve => setTimeout(resolve, 100)); // Small delay for image to process
+      renderCameraPreview(); // Update preview after each capture
+    }
+
+    stopCamera();
+    document.getElementById('camera-capture-btn').style.display = 'none';
+  } finally {
+    appState.isCapturing = false;
+    if (captureBtn) captureBtn.disabled = false;
+    if (flipBtn) flipBtn.disabled = false;
   }
-  
-  stopCamera();
-  document.getElementById('camera-capture-btn').style.display = 'none';
 }
 
 function captureToSlot(index) {
@@ -371,8 +451,12 @@ function captureToSlot(index) {
     
     const ctx = tempCanvas.getContext("2d");
     playShutterSound();
-    ctx.translate(tempCanvas.width, 0);
-    ctx.scale(-1, 1);
+
+    if (appState.cameraFacingMode === 'user') {
+      ctx.translate(tempCanvas.width, 0);
+      ctx.scale(-1, 1);
+    }
+
     ctx.drawImage(video, 0, 0);
     
     const img = new Image();
@@ -417,6 +501,21 @@ async function clearCameraSlot(index) {
 
   if (!appState.cameraStream) {
     await startCamera();
+  }
+}
+
+async function flipCamera() {
+  if (appState.isCapturing) return;
+
+  appState.cameraFacingMode = appState.cameraFacingMode === 'user' ? 'environment' : 'user';
+
+  try {
+    await startCamera();
+  } catch {
+    appState.cameraFacingMode = appState.cameraFacingMode === 'user' ? 'environment' : 'user';
+    updateVideoMirror();
+    updateFlipButtonLabel();
+    alert('Unable to switch camera on this device/browser.');
   }
 }
 

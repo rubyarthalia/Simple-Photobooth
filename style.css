@@ -262,6 +262,15 @@ video {
   display: block;
 }
 
+.camera-action-row {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+
 #countdown {
   position: absolute;
   top: 50%;
@@ -549,5 +558,9 @@ button {
 
   #final-canvas {
     max-height: 48vh;
+  }
+
+  .camera-action-row {
+    flex-direction: column;
   }
 }

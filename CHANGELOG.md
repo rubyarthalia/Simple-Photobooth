@@ -11,6 +11,7 @@ This format is inspired by Keep a Changelog and uses a date-based section style.
 - **Custom local font integration**: Added Majestic Face font from local assets and applied across UI and canvas timestamp text
 - **Shutter sound on capture**: Camera capture now plays `assets/shutter.wav` for each shot
 - **Dynamic timestamp contrast**: Timestamp text auto-switches to white on dark borders and black on bright borders
+- **Mobile camera flip control**: Added front/back camera toggle in capture view, with live stream restart and correct mirroring behavior per camera direction
 
 ### Changed
 
@@ -25,6 +26,7 @@ This format is inspired by Keep a Changelog and uses a date-based section style.
 - **File preview slot action**: `X` in file mode now clears the slot directly, making replacement flow more predictable
 - **Shutter replay consistency**: Reused a preloaded shutter audio instance so capture sound plays reliably on every photo, not just the first
 - **Mobile vintage sepia rendering**: Added filter fallback processing for browsers that do not reliably apply canvas `ctx.filter` during image draws (notably some mobile environments)
+- **Mobile shutter unlock flow**: Added tap-time audio unlock and replay fallback so shutter sound can fire for each photo on stricter mobile autoplay policies
 
 ## 2026-04-07
 
