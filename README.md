@@ -1,6 +1,8 @@
 # Photobooth
 
-A professional browser-based photobooth application with a guided multi-step workflow for creating print-ready photo strips. Features smart image cropping, customizable borders and filters, and accurate physical dimensions for real photo booth frames.
+A browser-based photobooth application with a guided multi-step workflow for creating print-ready photo strips. Features smart image cropping, customizable borders and filters, and accurate physical dimensions for real photo booth frames.
+
+Live : https://rubyarthalia.github.io/Simple-Photobooth/ 
 
 ## Features
 
