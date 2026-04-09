@@ -23,6 +23,8 @@ This format is inspired by Keep a Changelog and uses a date-based section style.
 - **Input method switch persistence**: Switching between Files and Camera now clears stale photos from the previous method
 - **Grid recapture flow**: Clearing camera slots with `X` now supports batch refill of all empty slots (instead of single-slot-only recapture behavior)
 - **File preview slot action**: `X` in file mode now clears the slot directly, making replacement flow more predictable
+- **Shutter replay consistency**: Reused a preloaded shutter audio instance so capture sound plays reliably on every photo, not just the first
+- **Mobile vintage sepia rendering**: Added filter fallback processing for browsers that do not reliably apply canvas `ctx.filter` during image draws (notably some mobile environments)
 
 ## 2026-04-07
 

@@ -38,9 +38,14 @@ const FRAME_CONFIG = {
 };
 
 function playShutterSound() {
-  const shutterSound = new Audio('assets/shutter.wav');
-  shutterSound.volume = 0.9;
-  shutterSound.play().catch(() => {
+  if (!appState.shutterSound) {
+    appState.shutterSound = new Audio('assets/shutter.wav');
+    appState.shutterSound.preload = 'auto';
+    appState.shutterSound.volume = 0.9;
+  }
+
+  appState.shutterSound.currentTime = 0;
+  appState.shutterSound.play().catch(() => {
     // Ignore autoplay/playback failures to avoid blocking capture flow.
   });
 }
@@ -540,6 +545,91 @@ function drawImageCropped(ctx, img, x, y, width, height, targetAspect) {
   ctx.drawImage(img, sx, sy, sWidth, sHeight, x, y, width, height);
 }
 
+function supportsCanvasFilter(ctx) {
+  if (!ctx || typeof ctx.filter !== 'string') return false;
+
+  const original = ctx.filter;
+  try {
+    ctx.filter = 'sepia(80%)';
+    const isSet = ctx.filter === 'sepia(80%)';
+    ctx.filter = original;
+    return isSet;
+  } catch {
+    ctx.filter = original;
+    return false;
+  }
+}
+
+function clampColor(value) {
+  if (value < 0) return 0;
+  if (value > 255) return 255;
+  return value;
+}
+
+function applyFallbackFilterToRegion(ctx, region, filter) {
+  if (!region || !filter || filter === 'none') return;
+
+  const x = Math.max(0, Math.floor(region.x));
+  const y = Math.max(0, Math.floor(region.y));
+  const width = Math.min(ctx.canvas.width - x, Math.ceil(region.width));
+  const height = Math.min(ctx.canvas.height - y, Math.ceil(region.height));
+  if (width <= 0 || height <= 0) return;
+
+  const imageData = ctx.getImageData(x, y, width, height);
+  const data = imageData.data;
+
+  const grayscaleMatch = filter.match(/grayscale\((\d+)%\)/i);
+  const sepiaMatch = filter.match(/sepia\((\d+)%\)/i);
+  const contrastMatch = filter.match(/contrast\((\d+)%\)/i);
+  const saturateMatch = filter.match(/saturate\((\d+)%\)/i);
+
+  const grayscaleAmount = grayscaleMatch ? Math.max(0, Math.min(1, Number(grayscaleMatch[1]) / 100)) : 0;
+  const sepiaAmount = sepiaMatch ? Math.max(0, Math.min(1, Number(sepiaMatch[1]) / 100)) : 0;
+  const contrastAmount = contrastMatch ? Number(contrastMatch[1]) / 100 : 1;
+  const saturateAmount = saturateMatch ? Number(saturateMatch[1]) / 100 : 1;
+
+  for (let i = 0; i < data.length; i += 4) {
+    let r = data[i];
+    let g = data[i + 1];
+    let b = data[i + 2];
+
+    if (grayscaleAmount > 0) {
+      const gray = (r + g + b) / 3;
+      r = r * (1 - grayscaleAmount) + gray * grayscaleAmount;
+      g = g * (1 - grayscaleAmount) + gray * grayscaleAmount;
+      b = b * (1 - grayscaleAmount) + gray * grayscaleAmount;
+    }
+
+    if (sepiaAmount > 0) {
+      const sepiaR = (r * 0.393) + (g * 0.769) + (b * 0.189);
+      const sepiaG = (r * 0.349) + (g * 0.686) + (b * 0.168);
+      const sepiaB = (r * 0.272) + (g * 0.534) + (b * 0.131);
+      r = r * (1 - sepiaAmount) + sepiaR * sepiaAmount;
+      g = g * (1 - sepiaAmount) + sepiaG * sepiaAmount;
+      b = b * (1 - sepiaAmount) + sepiaB * sepiaAmount;
+    }
+
+    if (contrastAmount !== 1) {
+      r = ((r - 128) * contrastAmount) + 128;
+      g = ((g - 128) * contrastAmount) + 128;
+      b = ((b - 128) * contrastAmount) + 128;
+    }
+
+    if (saturateAmount !== 1) {
+      const gray = (r * 0.299) + (g * 0.587) + (b * 0.114);
+      r = gray + (r - gray) * saturateAmount;
+      g = gray + (g - gray) * saturateAmount;
+      b = gray + (b - gray) * saturateAmount;
+    }
+
+    data[i] = clampColor(Math.round(r));
+    data[i + 1] = clampColor(Math.round(g));
+    data[i + 2] = clampColor(Math.round(b));
+  }
+
+  ctx.putImageData(imageData, x, y);
+}
+
 // Return readable text color based on background brightness.
 function getContrastTextColor(backgroundColor) {
   if (!backgroundColor || typeof backgroundColor !== 'string') return '#000000';
@@ -583,6 +673,8 @@ function getContrastTextColor(backgroundColor) {
 function renderToCanvas(canvas, frameType, images, filter, borderColor, scale = 1) {
   const config = FRAME_CONFIG[frameType];
   const ctx = canvas.getContext("2d");
+  const canUseNativeFilter = supportsCanvasFilter(ctx);
+  const photoRegions = [];
   
   canvas.width = config.width * scale;
   canvas.height = config.height * scale;
@@ -602,7 +694,7 @@ function renderToCanvas(canvas, frameType, images, filter, borderColor, scale = 
   const availableHeight = canvas.height - (margin * 2) - timestampHeight;
   
   // Apply filter
-  ctx.filter = filter;
+  ctx.filter = canUseNativeFilter ? filter : 'none';
   
   // Draw images based on frame type with proper cropping
   if (frameType === "strip") {
@@ -619,6 +711,7 @@ function renderToCanvas(canvas, frameType, images, filter, borderColor, scale = 
         const h = photoHeight - gap;
         
         drawImageCropped(ctx, img, x, y, w, h, config.aspectRatio);
+        photoRegions.push({ x, y, width: w, height: h });
       }
     });
   }
@@ -637,6 +730,7 @@ function renderToCanvas(canvas, frameType, images, filter, borderColor, scale = 
         const y = margin + (row * (photoHeight + gap));
         
         drawImageCropped(ctx, img, x, y, photoWidth, photoHeight, config.aspectRatio);
+        photoRegions.push({ x, y, width: photoWidth, height: photoHeight });
       }
     });
   }
@@ -655,8 +749,14 @@ function renderToCanvas(canvas, frameType, images, filter, borderColor, scale = 
         const h = photoHeight - gap;
         
         drawImageCropped(ctx, img, x, y, w, h, config.aspectRatio);
+        photoRegions.push({ x, y, width: w, height: h });
       }
     });
+  }
+
+  // Fallback for mobile browsers that do not apply canvas ctx.filter reliably.
+  if (!canUseNativeFilter && filter && filter !== 'none') {
+    photoRegions.forEach(region => applyFallbackFilterToRegion(ctx, region, filter));
   }
   
   // Reset filter for text
